@@ -1,55 +1,38 @@
-var express = require('express');
-var app = express();
+var app = require('express')();
+var bodyParser = require('body-parser');
 
-var https = require('https');
-
-var users = [];
-
-app.all('/', function(req, res, next) {
+app.use(function(req, res, next) {
   res.header("Access-Control-Allow-Origin", "*");
-  res.header("Access-Control-Allow-Headers", "X-Requested-With");
+  res.header("Access-Control-Allow-Headers", "content-type");
+  res.header("Access-Control-Allow-Methods", "*");
   next();
- });
-
-app.get('/reg/:token', function (req, res) {
-  console.log('new user with token' + req.params.token);
-  users.push(req.params.token);
-  res.end('registed');
 });
 
-app.get('', function (req, res) {
-  var postData = {
-    'data': {
-      'message': 'Hello',
-      'title': 'It is working'
-    },
-    'registration_ids': users
-  };
-  var options = {
-    hostname: 'fcm.googleapis.com',
-    port: 443,
-    path: '/fcm/send',
-    method: 'POST',
-    headers: {
-      'Authorization': 'key=' + process.env.API_KEY,
-      'Content-Type': 'application/json'
-    }
-  };
-  var req = https.request(options, (res) => {
-    console.log('statusCode:', res.statusCode);
-    console.log('headers:', res.headers);
+app.use(bodyParser.json());
 
-    res.on('data', (d) => {
-      process.stdout.write(d);
-    });
-  });
-  req.on('error', (e) => {
-    console.error(e);
-  });
-  req.write(JSON.stringify(postData));
-  req.end();
-  res.end('done');
-});
+app.locals.tokens = [];
+app.locals.groups = [];
+
+/*
+app.locals.users = [
+  {
+    full_name: '',
+    email: 'boostedchicken',
+    major: '',
+    year: '',
+    password: 'pockchamp',
+    push_token: ''
+  }
+]; //user{fuLL_name,email,major,year,password,push_token}
+app.locals.rooms = []; //room{messages[message{sender,text}],reveal[id]}
+*/
+
+app.use('/reg', require('./lib/token_reg.js'));
+app.use('/groups', require('./lib/groups.js'));
+/*
+app.use('/users', require('./lib/users.js'));
+app.use('/chat', require('./lib/chat.js'));
+*/
 
 app.listen(3000, function () {
   console.log('Listening on port 3000...');
